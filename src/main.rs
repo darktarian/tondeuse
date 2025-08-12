@@ -203,7 +203,6 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
             let mut final_tondeuses = Vec::new();
             for t in all_th {
                 if let Ok(tondeuse) = t.join(){
-                    println!("{:?}",tondeuse);
                     final_tondeuses.push(tondeuse);
                 }              
             }
@@ -222,7 +221,7 @@ fn main() {
             match result{
                 Ok(mower) =>{
                     for t in mower{
-                        println!("x:{}, y:{}, {}", t.pos.x, t.pos.y, t.pos.orientation);
+                        println!("Tondeuse n°{} x:{}, y:{}, orientation:{}",t.order, t.pos.x, t.pos.y, t.pos.orientation);
                     }
                 },
                 Err(e)=>{println!("{:?}",e)}
