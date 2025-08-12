@@ -165,7 +165,7 @@ impl Pelouse {
 }
 
 //Pour créer notre tondeuse à partir de de l'input
-fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order: u8) -> Tondeuse {
+fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: &Pelouse, order: u8) -> Tondeuse {
     let mut infos = line.split_whitespace();
     let x = infos
         .next()
@@ -189,7 +189,9 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order: u8) -> T
     }
 }
 
+
 //fonction principale de traitement.
+//on error default value are applied.
 fn executor(content: Vec<&str>) -> Vec<Tondeuse>{
     //cas de parsing de la taille max de le pelouse.
     let mut pelouse = Pelouse::default();
@@ -206,16 +208,16 @@ fn executor(content: Vec<&str>) -> Vec<Tondeuse>{
     // gestion des tondeuses
     let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
 
-    for (x, bloc) in content[1..].chunks(2).enumerate() {
-        if bloc.len() == 2 {
-            let position = bloc[0];
-            let mouvements = bloc[1];
-            let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone(), x as u8);
+    //chunk_exact -> s'arrete si moins de 2 lignes restantes.
+    for (x, bloc) in content[1..].chunks_exact(2).enumerate() {
+        let position = bloc[0];
+        let mouvements = bloc[1];
+        let tondeuse = get_initial_tondeuse(position, mouvements, &pelouse, x as u8);
 
-            //on initalise les positions de départ sur la pelouse
-            pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
-            all_tondeuses.push(tondeuse);
-        }
+        //on initalise les positions de départ sur la pelouse
+        pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
+        all_tondeuses.push(tondeuse);
+        
     }
 
     //on partage la pelouse et donc ses cases occupées.
