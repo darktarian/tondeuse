@@ -1,5 +1,5 @@
 use std::{
-    env, fmt::Error, sync::{Arc, Mutex}, thread
+    env, fmt::{self, Error}, sync::{Arc, Mutex}, thread
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -38,13 +38,17 @@ impl Orientation {
             _ => Orientation::default(),
         }
     }
-    fn to_string(self) -> String{
-        match self{
-            Orientation::N => "N".to_string(),
-            Orientation::W => "W".to_string(),
-            Orientation::S => "S".to_string(),
-            Orientation::E => "E".to_string(),
-        }
+}
+
+impl fmt::Display for Orientation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Orientation::N => "N",
+            Orientation::E => "E",
+            Orientation::S => "S",
+            Orientation::W => "W",
+        };
+        write!(f, "{}", s)
     }
 }
 
@@ -216,7 +220,7 @@ fn main() {
             match result{
                 Ok(mower) =>{
                     for t in mower{
-                        println!("x:{}, y:{}, {}", t.pos.x, t.pos.y, t.pos.orientation.to_string());
+                        println!("x:{}, y:{}, {}", t.pos.x, t.pos.y, t.pos.orientation);
                     }
                 },
                 Err(e)=>{println!("{:?}",e)}
