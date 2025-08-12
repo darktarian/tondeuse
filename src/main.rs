@@ -63,8 +63,11 @@ struct Position {
 pub(crate) struct Tondeuse {
     order: u8,
     pos: Position,
+    //lsite des actions à faire
     mouvement: Vec<char>,
+    //max taille pelouse
     max_x: u8,
+    //max taille pelouse
     max_y: u8,
 }
 
@@ -137,22 +140,27 @@ impl Tondeuse {
 pub(crate) struct Pelouse {
     max_x: u8,
     max_y: u8,
+    //le vec qui contient toutes les zones occupées
     occupied: Vec<(u8, u8)>,
 }
 
 impl Pelouse {
+    // pour verifier si la case visée est libre
     fn is_free(&self, x: u8, y: u8) -> bool {
         //x >= 0 && y >= 0 &&
         x <= self.max_x && y <= self.max_y && !self.occupied.contains(&(x, y))
     }
+    // pour occuper la case
     fn occupe(&mut self, x: u8, y: u8) {
         self.occupied.push((x, y));
     }
+    // pour mettre à jour et retirer la case précédement occupée.
     fn libere(&mut self, x: u8, y: u8) {
         self.occupied.retain(|&(px, py)| px != x || py != y);
     }
 }
 
+//Pour créer notre tondeuse à partir de de l'input
 fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order:u8) -> Tondeuse {
     let mut infos = line.split_whitespace();
     let x = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
@@ -168,6 +176,7 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order:u8) -> To
     }
 }
 
+//fonction principale de traitement.
 fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
                 //cas le taille max de le pelouse.
             let mut pelouse = Pelouse::default();
@@ -184,7 +193,7 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
                     let mouvements = bloc[1];
                     let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone(), x as u8);
 
-                    //on initalise les position de départ sur la pelouse
+                    //on initalise les positions de départ sur la pelouse
                     pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
                     all_tondeuses.push(tondeuse);
                 }
@@ -210,6 +219,7 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
 }
 
 fn main() {
+    //pour le passage du fichier de commande en argument.
     let args: Vec<String> = env::args().collect();
     match args.len() {
         1 => {println!("At least, one arg is needed : command file ! ")}
