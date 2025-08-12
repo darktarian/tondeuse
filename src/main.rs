@@ -70,16 +70,16 @@ pub(crate) struct Tondeuse {
     //lsite des actions à faire
     mouvement: Vec<char>,
     //max taille pelouse
-    max_x: u8,
+    //max_x: u8,
     //max taille pelouse
-    max_y: u8,
+    //max_y: u8,
 }
 
 impl Tondeuse {
     fn avancer(&mut self, pelouse: Arc<Mutex<Pelouse>>) {
         let mut pelouse = pelouse.lock().unwrap();
         match self.pos.orientation {
-            Orientation::N if self.pos.y < self.max_y => {
+            Orientation::N if self.pos.y < pelouse.max_y => {
                 let next_y = self.pos.y + 1;
                 if pelouse.is_free(self.pos.x, next_y) {
                     pelouse.libere(self.pos.x, self.pos.y);
@@ -88,7 +88,7 @@ impl Tondeuse {
                 }
                 //self.pos.y += 1
             }
-            Orientation::E if self.pos.x < self.max_x => {
+            Orientation::E if self.pos.x < pelouse.max_x => {
                 let next_x = self.pos.x + 1;
                 if pelouse.is_free(next_x, self.pos.y) {
                     pelouse.libere(self.pos.x, self.pos.y);
@@ -165,7 +165,7 @@ impl Pelouse {
 }
 
 //Pour créer notre tondeuse à partir de de l'input
-fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: &Pelouse, order: u8) -> Tondeuse {
+fn get_initial_tondeuse(line: &str, mvt: &str, order: u8) -> Tondeuse {
     let mut infos = line.split_whitespace();
     let x = infos
         .next()
@@ -184,8 +184,6 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: &Pelouse, order: u8) -> 
         order,
         mouvement: mvt.to_string().chars().collect(),
         pos: Position { x, y, orientation },
-        max_x: pelouse.max_x,
-        max_y: pelouse.max_y,
     }
 }
 
@@ -212,7 +210,7 @@ fn executor(content: Vec<&str>) -> Vec<Tondeuse>{
     for (x, bloc) in content[1..].chunks_exact(2).enumerate() {
         let position = bloc[0];
         let mouvements = bloc[1];
-        let tondeuse = get_initial_tondeuse(position, mouvements, &pelouse, x as u8);
+        let tondeuse = get_initial_tondeuse(position, mouvements,  x as u8);
 
         //on initalise les positions de départ sur la pelouse
         pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
@@ -281,8 +279,6 @@ mod tests {
                     orientation: Orientation::N,
                 },
                 mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
-                max_x: 5,
-                max_y: 5,
                 order: 0,
             },
             Tondeuse {
@@ -292,8 +288,6 @@ mod tests {
                     orientation: Orientation::E,
                 },
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
-                max_x: 5,
-                max_y: 5,
                 order: 1,
             },
         ];
@@ -313,8 +307,6 @@ mod tests {
                     orientation: Orientation::N,
                 },
                 mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
-                max_x: 5,
-                max_y: 5,
                 order: 0,
             },
             Tondeuse {
@@ -324,8 +316,6 @@ mod tests {
                     orientation: Orientation::E,
                 },
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
-                max_x: 5,
-                max_y: 5,
                 order: 1,
             },
         ];
@@ -346,8 +336,6 @@ mod tests {
                     orientation: Orientation::N,
                 },
                 mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'],
-                max_x: 5,
-                max_y: 5,
                 order: 0,
             },
             Tondeuse {
@@ -357,8 +345,6 @@ mod tests {
                     orientation: Orientation::W,
                 },
                 mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F', 'R'],
-                max_x: 5,
-                max_y: 5,
                 order: 1,
             },
         ];
