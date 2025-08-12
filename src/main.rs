@@ -61,6 +61,7 @@ struct Position {
 
 #[derive(Debug, Clone, PartialEq,Eq)]
 pub(crate) struct Tondeuse {
+    order: u8,
     pos: Position,
     mouvement: Vec<char>,
     max_x: u8,
@@ -152,13 +153,14 @@ impl Pelouse {
     }
 }
 
-fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse) -> Tondeuse {
+fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order:u8) -> Tondeuse {
     let mut infos = line.split_whitespace();
     let x = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
     let y = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
     let orientation = infos.next().and_then(|o| Some(Orientation::parse_orientation(o))).unwrap_or_default();
 
     Tondeuse {
+        order,
         mouvement: mvt.to_string().chars().collect(),
         pos: Position { x, y, orientation },
         max_x: pelouse.max_x,
@@ -176,11 +178,11 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
             // gestion des tondeuses
             let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
 
-            for bloc in content[1..].chunks(2) {
+            for (x,bloc) in content[1..].chunks(2).enumerate() {
                 if bloc.len() == 2 {
                     let position = bloc[0];
                     let mouvements = bloc[1];
-                    let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone());
+                    let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone(), x as u8);
 
                     //on initalise les position de départ sur la pelouse
                     pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
@@ -238,14 +240,14 @@ mod tests {
     fn with_original_datas() {
         let input = vec!["5 5","1 2 N","LFLFLFLFF","3 3 E","FFRFFRFRRF"];
         let reference= vec![
-            Tondeuse { 
-                pos: Position { x: 1, y: 3, orientation:Orientation::N }, 
-                mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'], 
-                max_x: 5, max_y: 5 }, 
+            Tondeuse {
+                pos:Position{x:1,y:3,orientation:Orientation::N},
+                mouvement:vec!['L','F','L','F','L','F','L','F','F'],
+                max_x:5,max_y:5, order: 1 }, 
             Tondeuse { 
                 pos: Position { x: 5, y: 1, orientation: Orientation::E }, 
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'], 
-                max_x: 5, max_y: 5 }];
+                max_x: 5, max_y: 5, order:2 }];
 
 
         if let Ok(result) = executor(input){
@@ -260,11 +262,11 @@ mod tests {
             Tondeuse { 
                 pos: Position { x: 1, y: 4, orientation:Orientation::N }, 
                 mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'], 
-                max_x: 5, max_y: 5 }, 
+                max_x: 5, max_y: 5, order:1 }, 
             Tondeuse { 
                 pos: Position { x: 4, y: 1, orientation: Orientation::E }, 
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'], 
-                max_x: 5, max_y: 5 }];
+                max_x: 5, max_y: 5, order:2 }];
 
 
         if let Ok(result) = executor(input){
@@ -279,11 +281,11 @@ mod tests {
             Tondeuse { 
                 pos: Position { x: 0, y: 5, orientation:Orientation::N }, 
                 mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'], 
-                max_x: 5, max_y: 5 }, 
+                max_x: 5, max_y: 5, order:1 }, 
             Tondeuse { 
                 pos: Position { x: 0, y: 0, orientation: Orientation::W }, 
                 mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F','R'], 
-                max_x: 5, max_y: 5 }];
+                max_x: 5, max_y: 5, order:2 }];
 
 
         if let Ok(result) = executor(input){
