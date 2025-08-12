@@ -252,4 +252,46 @@ mod tests {
             assert_eq!(reference, result);
         }
     }
+
+    #[test]
+    fn with_datas1() {
+        let input = vec!["5 5","1 3 N","LFLFLFLFF","2 3 E","FFRFFRFRRF"];
+        let reference= vec![
+            Tondeuse { 
+                pos: Position { x: 1, y: 4, orientation:Orientation::N }, 
+                mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'], 
+                max_x: 5, max_y: 5 }, 
+            Tondeuse { 
+                pos: Position { x: 4, y: 1, orientation: Orientation::E }, 
+                mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'], 
+                max_x: 5, max_y: 5 }];
+
+
+        if let Ok(result) = executor(input){
+            assert_eq!(reference, result);
+        }
+    }
+
+    #[test]
+    fn with_datas2() {
+        let input = vec!["5 5","1 0 N","FFLFRFFF","3 3 E","LLFFFLFFFR"];
+        let reference= vec![
+            Tondeuse { 
+                pos: Position { x: 0, y: 5, orientation:Orientation::N }, 
+                mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'], 
+                max_x: 5, max_y: 5 }, 
+            Tondeuse { 
+                pos: Position { x: 0, y: 0, orientation: Orientation::W }, 
+                mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F','R'], 
+                max_x: 5, max_y: 5 }];
+
+
+        if let Ok(result) = executor(input){
+            assert_eq!(reference, result);
+        }
+    }
+
+
+
+
 }
