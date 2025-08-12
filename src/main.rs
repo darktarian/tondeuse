@@ -1,5 +1,6 @@
 use core::net;
 use std::{
+    env,
     sync::{Arc, Mutex},
     thread,
 };
@@ -42,7 +43,6 @@ impl Orientation {
     }
 }
 
-
 #[derive(Clone, Debug)]
 struct Position {
     x: u8,
@@ -72,15 +72,14 @@ impl Tondeuse {
                 //self.pos.y += 1
             }
             Orientation::E if self.pos.x < self.max_x => {
-                let next_x = self.pos.x +1;
-                if pelouse.is_free(next_x, self.pos.y){
+                let next_x = self.pos.x + 1;
+                if pelouse.is_free(next_x, self.pos.y) {
                     pelouse.libere(self.pos.x, self.pos.y);
                     pelouse.occupe(next_x, self.pos.y);
                     self.pos.x += 1
                 }
                 //self.pos.x += 1
-                
-            },
+            }
             Orientation::S if self.pos.y > 0 => {
                 let next_y = self.pos.y - 1;
                 if pelouse.is_free(self.pos.x, next_y) {
@@ -89,16 +88,16 @@ impl Tondeuse {
                     self.pos.y -= 1
                 }
                 //self.pos.y -= 1
-            },
+            }
             Orientation::W if self.pos.x > 0 => {
-                let next_x = self.pos.x -1;
-                if pelouse.is_free(next_x, self.pos.y){
+                let next_x = self.pos.x - 1;
+                if pelouse.is_free(next_x, self.pos.y) {
                     pelouse.libere(self.pos.x, self.pos.y);
                     pelouse.occupe(next_x, self.pos.y);
                     self.pos.x -= 1
                 }
                 //self.pos.x -= 1
-            },
+            }
             _ => {}
         }
     }
@@ -133,7 +132,7 @@ pub(crate) struct Pelouse {
 
 impl Pelouse {
     fn is_free(&self, x: u8, y: u8) -> bool {
-        //x >= 0 && y >= 0 && 
+        //x >= 0 && y >= 0 &&
         x <= self.max_x && y <= self.max_y && !self.occupied.contains(&(x, y))
     }
     fn occupe(&mut self, x: u8, y: u8) {
@@ -146,8 +145,8 @@ impl Pelouse {
 
 fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse) -> Tondeuse {
     let mut infos = line.split_whitespace();
-    let x = infos.next().unwrap().parse().unwrap();
-    let y = infos.next().unwrap().parse().unwrap();
+    let x = infos.next().unwrap().parse().unwrap_or_default();
+    let y = infos.next().unwrap().parse().unwrap_or_default();
     let orientation = Orientation::parse_orientation(infos.next().unwrap());
 
     Tondeuse {
@@ -159,50 +158,76 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse) -> Tondeuse {
 }
 
 fn main() {
-    let binding = std::fs::read_to_string("input.txt").expect("something wrong here !");
-    let content: Vec<&str> = binding.lines().collect();
+    let args: Vec<String> = env::args().collect();
+    match args.len() {
+        1 => {println!("At least, one arg is needed : command file ! ")}
+        2 => {
+            let file: String = args[1].parse().unwrap_or_default();
+            let binding = std::fs::read_to_string(file).expect("something wrong here !");
+            let content: Vec<&str> = binding.lines().collect();
 
-    //cas le taille max de le pelouse.
-    let mut pelouse = Pelouse::default();
-    let mut size_pelouse = content[0].split_whitespace();
-    pelouse.max_x = size_pelouse.next().unwrap().parse().unwrap();
-    pelouse.max_y = size_pelouse.next().unwrap().parse().unwrap();
+            //cas le taille max de le pelouse.
+            let mut pelouse = Pelouse::default();
+            let mut size_pelouse = content[0].split_whitespace();
+            pelouse.max_x = size_pelouse.next().unwrap().parse().unwrap();
+            pelouse.max_y = size_pelouse.next().unwrap().parse().unwrap();
 
-    // gestion des tondeuses
-    let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
+            // gestion des tondeuses
+            let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
 
-    for bloc in content[1..].chunks(2) {
-        if bloc.len() == 2 {
-            let position = bloc[0];
-            let mouvements = bloc[1];
-            let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone());
+            for bloc in content[1..].chunks(2) {
+                if bloc.len() == 2 {
+                    let position = bloc[0];
+                    let mouvements = bloc[1];
+                    let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone());
 
-            //on initalise les position de départ sur la pelouse
-            pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
+                    //on initalise les position de départ sur la pelouse
+                    pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
 
-            all_tondeuses.push(tondeuse);
+                    all_tondeuses.push(tondeuse);
+                }
+            }
+
+            //println!("{:?}",tondeuses);
+            let lawn = Arc::new(Mutex::new(pelouse));
+
+            let mut all_th = Vec::new();
+            // Lancement en parallèle
+            for t in all_tondeuses {
+                let t1 = t.run_async(lawn.clone());
+                all_th.push(t1);
+            }
+
+            // Récupération des résultats
+            for t in all_th {
+                let tondeuse: Tondeuse = match t.join() {
+                    Ok(t) => t,
+                    Err(_) => todo!(),
+                };
+                println!(
+                    "Tondeuse → {} {} {:?}",
+                    tondeuse.pos.x, tondeuse.pos.y, tondeuse.pos.orientation
+                );
+            }
         }
+        _ =>{ println!("Oups something wrong.")}
     }
+    
 
-    //println!("{:?}",tondeuses);
-    let lawn = Arc::new(Mutex::new(pelouse));
+}
 
-    let mut all_th = Vec::new();
-    // Lancement en parallèle
-    for t in all_tondeuses {
-        let t1 = t.run_async(lawn.clone());
-        all_th.push(t1);
-    }
+#[cfg(test)]
+mod tests {
 
-    // Récupération des résultats
-    for t in all_th {
-        let tondeuse: Tondeuse = match t.join() {
-            Ok(t) => t,
-            Err(_) => todo!(),
-        };
-        println!(
-            "Tondeuse → {} {} {:?}",
-            tondeuse.pos.x, tondeuse.pos.y, tondeuse.pos.orientation
-        );
+    use super::*;
+    #[test]
+    fn with_original_datas() {
+        let input = r"5 5
+    1 2 N
+    LFLFLFLFF
+    3 3 E
+    FFRFFRFRRF";
+
+        main();
     }
 }
