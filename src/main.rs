@@ -154,9 +154,9 @@ impl Pelouse {
 
 fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse) -> Tondeuse {
     let mut infos = line.split_whitespace();
-    let x = infos.next().unwrap().parse().unwrap_or_default();
-    let y = infos.next().unwrap().parse().unwrap_or_default();
-    let orientation = Orientation::parse_orientation(infos.next().unwrap());
+    let x = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
+    let y = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
+    let orientation = infos.next().and_then(|o| Some(Orientation::parse_orientation(o))).unwrap_or_default();
 
     Tondeuse {
         mouvement: mvt.to_string().chars().collect(),
@@ -170,8 +170,8 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
                 //cas le taille max de le pelouse.
             let mut pelouse = Pelouse::default();
             let mut size_pelouse = content[0].split_whitespace();
-            pelouse.max_x = size_pelouse.next().unwrap().parse().unwrap();
-            pelouse.max_y = size_pelouse.next().unwrap().parse().unwrap();
+            pelouse.max_x = size_pelouse.next().and_then(|s|s.parse().ok()).unwrap_or_default();
+            pelouse.max_y = size_pelouse.next().and_then(|s|s.parse().ok()).unwrap_or_default();
 
             // gestion des tondeuses
             let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
