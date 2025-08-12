@@ -1,8 +1,5 @@
 use std::{
-    env,
-    fmt::{self, Error},
-    sync::{Arc, Mutex},
-    thread,
+    env, fmt::{self}, str::FromStr, sync::{Arc, Mutex}, thread
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -31,14 +28,18 @@ impl Orientation {
             Orientation::W => Orientation::N,
         }
     }
-    fn parse_orientation(o: &str) -> Orientation {
-        match o {
-            "N" => Orientation::N,
-            "E" => Orientation::E,
-            "S" => Orientation::S,
-            "W" => Orientation::W,
-            //par defaut c'est le Nord ^^
-            _ => Orientation::default(),
+}
+
+impl FromStr for Orientation {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_uppercase().as_str() {
+            "N" => Ok(Orientation::N),
+            "E" => Ok(Orientation::E),
+            "S" => Ok(Orientation::S),
+            "W" => Ok(Orientation::W),
+            _ => Err(format!("Orientation invalide: {}", s)),
         }
     }
 }
@@ -130,7 +131,7 @@ impl Tondeuse {
     }
 
     /// Lance la tondeuse dans un thread
-    fn run_async(self, pelouse: Arc<Mutex<Pelouse>>) -> thread::JoinHandle<Tondeuse> {
+    fn run(self, pelouse: Arc<Mutex<Pelouse>>) -> thread::JoinHandle<Tondeuse> {
         thread::spawn(move || {
             let mut t = self.clone();
             t.executer(self.mouvement, pelouse);
@@ -176,7 +177,7 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order: u8) -> T
         .unwrap_or_default();
     let orientation = infos
         .next()
-        .and_then(|o| Some(Orientation::parse_orientation(o)))
+        .and_then(|o| Orientation::from_str(o).ok())
         .unwrap_or_default();
 
     Tondeuse {
@@ -189,8 +190,8 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order: u8) -> T
 }
 
 //fonction principale de traitement.
-fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error> {
-    //cas le taille max de le pelouse.
+fn executor(content: Vec<&str>) -> Vec<Tondeuse>{
+    //cas de parsing de la taille max de le pelouse.
     let mut pelouse = Pelouse::default();
     let mut size_pelouse = content[0].split_whitespace();
     pelouse.max_x = size_pelouse
@@ -223,7 +224,7 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error> {
 
     // Lancement en parallèle
     for t in all_tondeuses {
-        let t1 = t.run_async(lawn.clone());
+        let t1 = t.run(lawn.clone());
         all_th.push(t1);
     }
 
@@ -234,7 +235,7 @@ fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error> {
             final_tondeuses.push(tondeuse);
         }
     }
-    Ok(final_tondeuses)
+    final_tondeuses
 }
 
 fn main() {
@@ -249,18 +250,12 @@ fn main() {
             let binding = std::fs::read_to_string(file).expect("something wrong here !");
             let content: Vec<&str> = binding.lines().collect();
             let result = executor(content);
-            match result {
-                Ok(mower) => {
-                    for t in mower {
-                        println!(
-                            "Tondeuse n°{} x:{}, y:{}, orientation:{}",
-                            t.order, t.pos.x, t.pos.y, t.pos.orientation
-                        );
-                    }
-                }
-                Err(e) => {
-                    println!("{:?}", e)
-                }
+                
+            for t in result {
+                println!(
+                    "Tondeuse n°{} x:{}, y:{}, orientation:{}",
+                    t.order, t.pos.x, t.pos.y, t.pos.orientation
+                );
             }
         }
         _ => {
@@ -286,7 +281,7 @@ mod tests {
                 mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
                 max_x: 5,
                 max_y: 5,
-                order: 1,
+                order: 0,
             },
             Tondeuse {
                 pos: Position {
@@ -297,13 +292,12 @@ mod tests {
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
                 max_x: 5,
                 max_y: 5,
-                order: 2,
+                order: 1,
             },
         ];
 
-        if let Ok(result) = executor(input) {
-            assert_eq!(reference, result);
-        }
+        let result = executor(input);
+        assert_eq!(reference, result);
     }
 
     #[test]
@@ -319,7 +313,7 @@ mod tests {
                 mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
                 max_x: 5,
                 max_y: 5,
-                order: 1,
+                order: 0,
             },
             Tondeuse {
                 pos: Position {
@@ -330,13 +324,13 @@ mod tests {
                 mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
                 max_x: 5,
                 max_y: 5,
-                order: 2,
+                order: 1,
             },
         ];
 
-        if let Ok(result) = executor(input) {
-            assert_eq!(reference, result);
-        }
+        let result = executor(input);
+        assert_eq!(reference, result);
+        
     }
 
     #[test]
@@ -352,7 +346,7 @@ mod tests {
                 mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'],
                 max_x: 5,
                 max_y: 5,
-                order: 1,
+                order: 0,
             },
             Tondeuse {
                 pos: Position {
@@ -363,12 +357,12 @@ mod tests {
                 mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F', 'R'],
                 max_x: 5,
                 max_y: 5,
-                order: 2,
+                order: 1,
             },
         ];
 
-        if let Ok(result) = executor(input) {
-            assert_eq!(reference, result);
-        }
+        let result = executor(input);
+        assert_eq!(reference, result);
+        
     }
 }
