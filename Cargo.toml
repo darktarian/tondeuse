@@ -1,0 +1,9 @@
+[package]
+name = "qwant_tondeuse"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+tokio = { version = "1.47.0", features = ["full"] }
+clap = { version = "4.5.44", features = ["derive"] }
