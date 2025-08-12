@@ -1,5 +1,8 @@
 use std::{
-    env, fmt::{self, Error}, sync::{Arc, Mutex}, thread
+    env,
+    fmt::{self, Error},
+    sync::{Arc, Mutex},
+    thread,
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -59,7 +62,7 @@ struct Position {
     orientation: Orientation,
 }
 
-#[derive(Debug, Clone, PartialEq,Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Tondeuse {
     order: u8,
     pos: Position,
@@ -161,11 +164,20 @@ impl Pelouse {
 }
 
 //Pour créer notre tondeuse à partir de de l'input
-fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order:u8) -> Tondeuse {
+fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order: u8) -> Tondeuse {
     let mut infos = line.split_whitespace();
-    let x = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
-    let y = infos.next().and_then(|s| s.parse().ok()).unwrap_or_default();
-    let orientation = infos.next().and_then(|o| Some(Orientation::parse_orientation(o))).unwrap_or_default();
+    let x = infos
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_default();
+    let y = infos
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_default();
+    let orientation = infos
+        .next()
+        .and_then(|o| Some(Orientation::parse_orientation(o)))
+        .unwrap_or_default();
 
     Tondeuse {
         order,
@@ -177,67 +189,83 @@ fn get_initial_tondeuse(line: &str, mvt: &str, pelouse: Pelouse, order:u8) -> To
 }
 
 //fonction principale de traitement.
-fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error>{
-                //cas le taille max de le pelouse.
-            let mut pelouse = Pelouse::default();
-            let mut size_pelouse = content[0].split_whitespace();
-            pelouse.max_x = size_pelouse.next().and_then(|s|s.parse().ok()).unwrap_or_default();
-            pelouse.max_y = size_pelouse.next().and_then(|s|s.parse().ok()).unwrap_or_default();
+fn executor(content: Vec<&str>) -> Result<Vec<Tondeuse>, Error> {
+    //cas le taille max de le pelouse.
+    let mut pelouse = Pelouse::default();
+    let mut size_pelouse = content[0].split_whitespace();
+    pelouse.max_x = size_pelouse
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_default();
+    pelouse.max_y = size_pelouse
+        .next()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or_default();
 
-            // gestion des tondeuses
-            let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
+    // gestion des tondeuses
+    let mut all_tondeuses: Vec<Tondeuse> = Vec::new();
 
-            for (x,bloc) in content[1..].chunks(2).enumerate() {
-                if bloc.len() == 2 {
-                    let position = bloc[0];
-                    let mouvements = bloc[1];
-                    let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone(), x as u8);
+    for (x, bloc) in content[1..].chunks(2).enumerate() {
+        if bloc.len() == 2 {
+            let position = bloc[0];
+            let mouvements = bloc[1];
+            let tondeuse = get_initial_tondeuse(position, mouvements, pelouse.clone(), x as u8);
 
-                    //on initalise les positions de départ sur la pelouse
-                    pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
-                    all_tondeuses.push(tondeuse);
-                }
-            }
+            //on initalise les positions de départ sur la pelouse
+            pelouse.occupe(tondeuse.pos.x, tondeuse.pos.y);
+            all_tondeuses.push(tondeuse);
+        }
+    }
 
-            let lawn = Arc::new(Mutex::new(pelouse));
-            let mut all_th = Vec::new();
+    //on partage la pelouse et donc ses cases occupées.
+    let lawn = Arc::new(Mutex::new(pelouse));
+    let mut all_th = Vec::new();
 
-            // Lancement en parallèle
-            for t in all_tondeuses {
-                let t1 = t.run_async(lawn.clone());
-                all_th.push(t1);
-            }
+    // Lancement en parallèle
+    for t in all_tondeuses {
+        let t1 = t.run_async(lawn.clone());
+        all_th.push(t1);
+    }
 
-            // Récupération des résultats
-            let mut final_tondeuses = Vec::new();
-            for t in all_th {
-                if let Ok(tondeuse) = t.join(){
-                    final_tondeuses.push(tondeuse);
-                }              
-            }
-            Ok(final_tondeuses)
+    // Récupération des résultats
+    let mut final_tondeuses = Vec::new();
+    for t in all_th {
+        if let Ok(tondeuse) = t.join() {
+            final_tondeuses.push(tondeuse);
+        }
+    }
+    Ok(final_tondeuses)
 }
 
 fn main() {
     //pour le passage du fichier de commande en argument.
     let args: Vec<String> = env::args().collect();
     match args.len() {
-        1 => {println!("At least, one arg is needed : command file ! ")}
+        1 => {
+            println!("At least, one arg is needed : command file ! ")
+        }
         2 => {
             let file: String = args[1].parse().unwrap_or_default();
             let binding = std::fs::read_to_string(file).expect("something wrong here !");
             let content: Vec<&str> = binding.lines().collect();
             let result = executor(content);
-            match result{
-                Ok(mower) =>{
-                    for t in mower{
-                        println!("Tondeuse n°{} x:{}, y:{}, orientation:{}",t.order, t.pos.x, t.pos.y, t.pos.orientation);
+            match result {
+                Ok(mower) => {
+                    for t in mower {
+                        println!(
+                            "Tondeuse n°{} x:{}, y:{}, orientation:{}",
+                            t.order, t.pos.x, t.pos.y, t.pos.orientation
+                        );
                     }
-                },
-                Err(e)=>{println!("{:?}",e)}
+                }
+                Err(e) => {
+                    println!("{:?}", e)
+                }
             }
         }
-        _ =>{ println!("Oups something wrong.")}
+        _ => {
+            println!("Oups something wrong.")
+        }
     }
 }
 
@@ -247,62 +275,100 @@ mod tests {
     use super::*;
     #[test]
     fn with_original_datas() {
-        let input = vec!["5 5","1 2 N","LFLFLFLFF","3 3 E","FFRFFRFRRF"];
-        let reference= vec![
+        let input = vec!["5 5", "1 2 N", "LFLFLFLFF", "3 3 E", "FFRFFRFRRF"];
+        let reference = vec![
             Tondeuse {
-                pos:Position{x:1,y:3,orientation:Orientation::N},
-                mouvement:vec!['L','F','L','F','L','F','L','F','F'],
-                max_x:5,max_y:5, order: 1 }, 
-            Tondeuse { 
-                pos: Position { x: 5, y: 1, orientation: Orientation::E }, 
-                mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'], 
-                max_x: 5, max_y: 5, order:2 }];
+                pos: Position {
+                    x: 1,
+                    y: 3,
+                    orientation: Orientation::N,
+                },
+                mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
+                max_x: 5,
+                max_y: 5,
+                order: 1,
+            },
+            Tondeuse {
+                pos: Position {
+                    x: 5,
+                    y: 1,
+                    orientation: Orientation::E,
+                },
+                mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
+                max_x: 5,
+                max_y: 5,
+                order: 2,
+            },
+        ];
 
-
-        if let Ok(result) = executor(input){
+        if let Ok(result) = executor(input) {
             assert_eq!(reference, result);
         }
     }
 
     #[test]
     fn with_datas1() {
-        let input = vec!["5 5","1 3 N","LFLFLFLFF","2 3 E","FFRFFRFRRF"];
-        let reference= vec![
-            Tondeuse { 
-                pos: Position { x: 1, y: 4, orientation:Orientation::N }, 
-                mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'], 
-                max_x: 5, max_y: 5, order:1 }, 
-            Tondeuse { 
-                pos: Position { x: 4, y: 1, orientation: Orientation::E }, 
-                mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'], 
-                max_x: 5, max_y: 5, order:2 }];
+        let input = vec!["5 5", "1 3 N", "LFLFLFLFF", "2 3 E", "FFRFFRFRRF"];
+        let reference = vec![
+            Tondeuse {
+                pos: Position {
+                    x: 1,
+                    y: 4,
+                    orientation: Orientation::N,
+                },
+                mouvement: vec!['L', 'F', 'L', 'F', 'L', 'F', 'L', 'F', 'F'],
+                max_x: 5,
+                max_y: 5,
+                order: 1,
+            },
+            Tondeuse {
+                pos: Position {
+                    x: 4,
+                    y: 1,
+                    orientation: Orientation::E,
+                },
+                mouvement: vec!['F', 'F', 'R', 'F', 'F', 'R', 'F', 'R', 'R', 'F'],
+                max_x: 5,
+                max_y: 5,
+                order: 2,
+            },
+        ];
 
-
-        if let Ok(result) = executor(input){
+        if let Ok(result) = executor(input) {
             assert_eq!(reference, result);
         }
     }
 
     #[test]
     fn with_datas2() {
-        let input = vec!["5 5","1 0 N","FFLFRFFF","3 3 E","LLFFFLFFFR"];
-        let reference= vec![
-            Tondeuse { 
-                pos: Position { x: 0, y: 5, orientation:Orientation::N }, 
-                mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'], 
-                max_x: 5, max_y: 5, order:1 }, 
-            Tondeuse { 
-                pos: Position { x: 0, y: 0, orientation: Orientation::W }, 
-                mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F','R'], 
-                max_x: 5, max_y: 5, order:2 }];
+        let input = vec!["5 5", "1 0 N", "FFLFRFFF", "3 3 E", "LLFFFLFFFR"];
+        let reference = vec![
+            Tondeuse {
+                pos: Position {
+                    x: 0,
+                    y: 5,
+                    orientation: Orientation::N,
+                },
+                mouvement: vec!['F', 'F', 'L', 'F', 'R', 'F', 'F', 'F'],
+                max_x: 5,
+                max_y: 5,
+                order: 1,
+            },
+            Tondeuse {
+                pos: Position {
+                    x: 0,
+                    y: 0,
+                    orientation: Orientation::W,
+                },
+                mouvement: vec!['L', 'L', 'F', 'F', 'F', 'L', 'F', 'F', 'F', 'R'],
+                max_x: 5,
+                max_y: 5,
+                order: 2,
+            },
+        ];
 
-
-        if let Ok(result) = executor(input){
+        if let Ok(result) = executor(input) {
             assert_eq!(reference, result);
         }
     }
-
-
-
-
 }
