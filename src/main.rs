@@ -119,8 +119,8 @@ impl Tondeuse {
         }
     }
 
-    fn executer(&mut self, instructions: Vec<char>, pelouse: Arc<Mutex<Pelouse>>) {
-        for cmd in instructions {
+    fn executer(&mut self, pelouse: Arc<Mutex<Pelouse>>) {
+        for cmd in self.mouvement.clone(){
             match cmd {
                 'L' => self.pos.orientation = self.pos.orientation.gauche(),
                 'R' => self.pos.orientation = self.pos.orientation.droite(),
@@ -131,11 +131,11 @@ impl Tondeuse {
     }
 
     /// Lance la tondeuse dans un thread
-    fn run(self, pelouse: Arc<Mutex<Pelouse>>) -> thread::JoinHandle<Tondeuse> {
+    fn run(mut self, pelouse: Arc<Mutex<Pelouse>>) -> thread::JoinHandle<Tondeuse> {
         thread::spawn(move || {
-            let mut t = self.clone();
-            t.executer(self.mouvement, pelouse);
-            t
+            //let mut t = self.clone();
+            self.executer( pelouse);
+            self
         })
     }
 }
