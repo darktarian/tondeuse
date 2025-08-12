@@ -58,7 +58,7 @@ pub(crate) struct Tondeuse{
 
 impl Tondeuse {
     fn avancer(&mut self, pelouse: Arc<Mutex<Pelouse>>) {
-        let pelouse = pelouse.into_inner();
+        let mut pelouse = pelouse.lock().unwrap();
         match self.pos.orientation {
             Orientation::N if self.pos.y < self.max_y =>{
                 let next_y= self.pos.y+1;
